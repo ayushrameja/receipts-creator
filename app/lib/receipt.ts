@@ -46,7 +46,7 @@ export function createLineItem(particulars = "Petrol (MS)"): LineItem {
 export function createEmptyDraft(): ReceiptDraft {
   return {
     receiptNumber: "",
-    date: todayIso(),
+    date: "",
     paymentMode: "cash",
     customerName: "",
     vehicleNumber: "",

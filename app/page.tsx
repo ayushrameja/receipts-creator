@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import ReceiptApp from "./components/ReceiptApp";
+import ReceiptHome from "./components/ReceiptHome";
 
 export const metadata: Metadata = {
   title: "Evergreen Receipt Creator",
@@ -7,6 +7,5 @@ export const metadata: Metadata = {
 };
 
 export default function Home() {
-  return <ReceiptApp />;
+  return <ReceiptHome />;
 }
-

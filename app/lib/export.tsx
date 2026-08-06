@@ -25,6 +25,10 @@ function safeFilename(receipt: Receipt) {
   return `receipt-${number || "draft"}-${receipt.date || "undated"}`;
 }
 
+export function receiptPdfFilename(receipt: Receipt) {
+  return `${safeFilename(receipt)}.pdf`;
+}
+
 function svgMarkup(receipt: Receipt) {
   return renderToStaticMarkup(<ReceiptSvg receipt={receipt} />);
 }
@@ -70,7 +74,7 @@ export async function exportReceiptImage(receipt: Receipt, format: "png" | "jpeg
   downloadBlob(blob, `${safeFilename(receipt)}.${format === "jpeg" ? "jpg" : "png"}`);
 }
 
-export async function exportReceiptPdf(receipt: Receipt) {
+export async function createReceiptPdfBlob(receipt: Receipt) {
   const parser = new DOMParser();
   const parsed = parser.parseFromString(svgMarkup(receipt), "image/svg+xml");
   const svg = parsed.documentElement as unknown as SVGElement;
@@ -81,7 +85,11 @@ export async function exportReceiptPdf(receipt: Receipt) {
     compress: true,
   });
   await svg2pdf(svg, pdf, { x: 0, y: 0, width: A6_WIDTH_MM, height: A6_HEIGHT_MM });
-  pdf.save(`${safeFilename(receipt)}.pdf`);
+  return pdf.output("blob");
+}
+
+export async function exportReceiptPdf(receipt: Receipt) {
+  downloadBlob(await createReceiptPdfBlob(receipt), receiptPdfFilename(receipt));
 }
 
 export async function exportReceiptDocx(receipt: Receipt) {
@@ -123,4 +131,3 @@ export function downloadBackupFile(data: unknown) {
     `evergreen-receipts-backup-${date}.json`,
   );
 }
-

@@ -11,6 +11,10 @@ import {
 } from "../app/lib/receipt";
 
 describe("receipt calculations", () => {
+  it("starts a new receipt without a prefilled date", () => {
+    expect(createEmptyDraft().date).toBe("");
+  });
+
   it("multiplies quantity and rate with currency rounding", () => {
     const item = { ...createLineItem(), quantity: "12.345", rate: "96.78" };
     expect(calculateLineAmount(item)).toBe(1194.75);
@@ -68,4 +72,3 @@ describe("receipt validation and revision", () => {
     expect(matchesReceipt(receipt, "not-there")).toBe(false);
   });
 });
-
