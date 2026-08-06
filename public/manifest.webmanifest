@@ -1,0 +1,19 @@
+{
+  "name": "Evergreen Receipt Creator",
+  "short_name": "Receipts",
+  "description": "Create and manage Evergreen Filling Station receipts offline.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f6f3ea",
+  "theme_color": "#123d2d",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
+
