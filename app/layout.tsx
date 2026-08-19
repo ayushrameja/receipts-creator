@@ -1,7 +1,10 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
+const vercelHost = process.env.VERCEL_PROJECT_PRODUCTION_URL ?? process.env.VERCEL_URL;
+
 export const metadata: Metadata = {
+  metadataBase: new URL(vercelHost ? `https://${vercelHost}` : "http://localhost:3000"),
   title: {
     default: "Evergreen Receipt Creator",
     template: "%s · Evergreen Receipt Creator",

@@ -96,9 +96,9 @@ export function validateDraft(draft: ReceiptDraft) {
 }
 
 export function receiptSnapshot(receipt: Receipt): ReceiptSnapshot {
-  const snapshot = structuredClone(receipt) as Receipt & { revisions?: Receipt["revisions"] };
+  const snapshot: ReceiptSnapshot & { revisions?: Receipt["revisions"] } = structuredClone(receipt);
   delete snapshot.revisions;
-  return snapshot as ReceiptSnapshot;
+  return snapshot;
 }
 
 export function buildReceipt(

@@ -3,13 +3,17 @@
 import type { Ref } from "react";
 import type { Receipt } from "../types";
 import { calculateLineAmount, formatInr } from "../lib/receipt";
-import bharatPetroleumLogo from "../assets/bharat-petroleum-monochrome.svg?raw";
-import ekOnkarSymbol from "../assets/ek-onkar.png?inline";
+import bharatPetroleumLogo from "../assets/bharat-petroleum-monochrome.svg";
+import ekOnkarSymbol from "../assets/ek-onkar.png";
 
 const WIDTH = 1050;
 const HEIGHT = 1480;
-const BHARAT_PETROLEUM_LOGO = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(bharatPetroleumLogo)}`;
-const EK_ONKAR_SYMBOL = ekOnkarSymbol;
+function assetUrl(asset: string | { src: string }) {
+  return typeof asset === "string" ? asset : asset.src;
+}
+
+const BHARAT_PETROLEUM_LOGO = assetUrl(bharatPetroleumLogo);
+const EK_ONKAR_SYMBOL = assetUrl(ekOnkarSymbol);
 const TEMPLATE_PARTICULARS = ["Petrol (MS)", "Lts. H.S.D.", "Lts. M. Oil"];
 
 function displayDate(value: string) {
