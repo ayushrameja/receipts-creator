@@ -1,5 +1,5 @@
 {
-  "name": "evergreen-receipt-creator",
+  "name": "receipts",
   "version": "0.1.0",
   "private": true,
   "packageManager": "pnpm@10.28.2",

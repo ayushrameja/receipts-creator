@@ -1,3 +1,5 @@
+export type ReceiptTemplateId = "evergreen" | "skn";
+
 export type PaymentMode = "cash" | "credit";
 
 export interface BusinessProfile {
@@ -21,7 +23,8 @@ export interface LineItem {
   useManualAmount: boolean;
 }
 
-export interface ReceiptDraft {
+export interface EvergreenReceiptDraft {
+  templateId: "evergreen";
   receiptNumber: string;
   date: string;
   paymentMode: PaymentMode;
@@ -30,13 +33,33 @@ export interface ReceiptDraft {
   items: LineItem[];
 }
 
-export interface ReceiptSnapshot extends ReceiptDraft {
+export interface SknReceiptDraft {
+  templateId: "skn";
+  receiptNumber: string;
+  date: string;
+  vehicleNumber: string;
+  quantity: string;
+  amount: string;
+  total: string;
+}
+
+export type ReceiptDraft = EvergreenReceiptDraft | SknReceiptDraft;
+
+interface ReceiptMetadata {
   id: string;
-  total: number;
-  profileSnapshot: BusinessProfile;
+  totalValue: number;
   createdAt: string;
   updatedAt: string;
 }
+
+export type EvergreenReceiptSnapshot = EvergreenReceiptDraft &
+  ReceiptMetadata & {
+    profileSnapshot: BusinessProfile;
+  };
+
+export type SknReceiptSnapshot = SknReceiptDraft & ReceiptMetadata;
+
+export type ReceiptSnapshot = EvergreenReceiptSnapshot | SknReceiptSnapshot;
 
 export interface ReceiptRevision {
   id: string;
@@ -45,14 +68,13 @@ export interface ReceiptRevision {
   previous: ReceiptSnapshot;
 }
 
-export interface Receipt extends ReceiptSnapshot {
+export type Receipt = ReceiptSnapshot & {
   revisions: ReceiptRevision[];
-}
+};
 
 export interface AppBackup {
-  version: 1;
+  version: 2;
   exportedAt: string;
   profile: BusinessProfile;
   receipts: Receipt[];
 }
-

@@ -6,23 +6,23 @@ const vercelHost = process.env.VERCEL_PROJECT_PRODUCTION_URL ?? process.env.VERC
 export const metadata: Metadata = {
   metadataBase: new URL(vercelHost ? `https://${vercelHost}` : "http://localhost:3000"),
   title: {
-    default: "Evergreen Receipt Creator",
-    template: "%s · Evergreen Receipt Creator",
+    default: "Receipts",
+    template: "%s · Receipts",
   },
-  description: "A private, offline receipt book for Evergreen Filling Station.",
-  applicationName: "Evergreen Receipts",
+  description: "A private, offline receipt book for Evergreen and SKN receipts.",
+  applicationName: "Receipts",
   manifest: "/manifest.webmanifest",
   openGraph: {
-    title: "Evergreen Receipt Creator",
-    description: "Create, save, print, and export filling station receipts - even offline.",
+    title: "Receipts",
+    description: "Create, save, and export Evergreen and SKN receipts - even offline.",
     type: "website",
-    images: [{ url: "/og.png", width: 1200, height: 630, alt: "Evergreen Receipt Creator" }],
+    images: [{ url: "/og.svg", width: 1200, height: 630, alt: "Receipts - Evergreen and SKN" }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Evergreen Receipt Creator",
-    description: "Create, save, print, and export filling station receipts - even offline.",
-    images: ["/og.png"],
+    title: "Receipts",
+    description: "Create, save, and export Evergreen and SKN receipts - even offline.",
+    images: ["/og.svg"],
   },
   icons: {
     icon: "/favicon.svg",

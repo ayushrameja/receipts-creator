@@ -1,6 +1,11 @@
-# Evergreen Receipt Creator
+# Receipts
 
-An installable, offline-first receipt book for Evergreen Filling Station. Staff can create A6 cash or credit memos, keep searchable records on one device, revise saved receipts with an audit note, and export PDF, DOCX, PNG, or JPEG copies.
+An installable, offline-first receipt book for two templates:
+
+- **Evergreen** filling station cash or credit memos.
+- **SKN** natural gas retail invoices recreated as clean vector artwork.
+
+Each template keeps its own autosaved working draft. Completed receipts can be saved into shared, searchable on-device history, revised with an audit note, and exported or shared as PDFs.
 
 ## Run locally
 
@@ -21,8 +26,8 @@ pnpm build
 pnpm test:e2e
 ```
 
-The app intentionally has no server database or account system. Receipts are stored in IndexedDB in the current browser. Use **Settings → Download backup** regularly to keep a portable JSON copy.
+The app intentionally has no server database or account system. Receipts are stored in IndexedDB in the current browser. Use **Settings -> Download backup** regularly to keep a portable JSON copy. Version 2 backups contain both receipt templates, and version 1 Evergreen backups remain importable.
 
 ## Deploy on Vercel
 
-Import the repository into Vercel and leave the detected framework and build settings at their defaults. Vercel will detect Next.js, use the committed pnpm lockfile, and build with Node.js 24. No environment variables or custom deployment configuration are required.
+Import the repository into Vercel and use the detected Next.js defaults. No environment variables or custom deployment configuration are required.

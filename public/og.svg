@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" role="img" aria-labelledby="title description">
+  <title id="title">Receipts</title>
+  <desc id="description">Offline Evergreen and SKN receipt creator</desc>
+  <rect width="1200" height="630" fill="#f6f3ea"/>
+  <rect x="18" y="18" width="1164" height="594" rx="38" fill="none" stroke="#123d2d" stroke-width="8"/>
+  <circle cx="1020" cy="130" r="210" fill="#f5c744" opacity=".22"/>
+  <circle cx="1060" cy="550" r="260" fill="#d77aae" opacity=".2"/>
+  <g transform="translate(82 95)">
+    <rect width="82" height="82" rx="22" fill="#123d2d"/>
+    <path d="M24 18h36v49l-8-5-8 5-8-5-7 5-5-4V18Z" fill="#fffefa"/>
+    <path d="M33 33h18M33 43h18M33 53h12" stroke="#123d2d" stroke-width="4" stroke-linecap="round"/>
+  </g>
+  <text x="82" y="300" fill="#123d2d" font-family="Georgia, Times New Roman, serif" font-size="132" font-weight="bold">Receipts</text>
+  <text x="88" y="375" fill="#516058" font-family="Arial, Helvetica, sans-serif" font-size="36" font-weight="bold">EVERGREEN + SKN</text>
+  <line x1="88" y1="425" x2="560" y2="425" stroke="#f5c744" stroke-width="8"/>
+  <text x="88" y="505" fill="#123d2d" font-family="Georgia, Times New Roman, serif" font-size="43">Create. Save. Export. Offline.</text>
+  <g transform="translate(770 115) rotate(5 145 205)">
+    <rect width="290" height="410" rx="12" fill="#fffefa" stroke="#123d2d" stroke-width="6"/>
+    <path d="M42 82h206M42 130h206M42 178h206M42 226h206M42 320h206" stroke="#819087" stroke-width="4" stroke-dasharray="13 10"/>
+    <path d="M42 275h80M42 355h150" stroke="#123d2d" stroke-width="5"/>
+    <circle cx="58" cy="48" r="16" fill="#f5c744"/>
+    <text x="88" y="58" fill="#123d2d" font-family="Arial, Helvetica, sans-serif" font-size="25" font-weight="bold">RECEIPT</text>
+  </g>
+</svg>

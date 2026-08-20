@@ -1,7 +1,7 @@
 {
-  "name": "Evergreen Receipt Creator",
+  "name": "Receipts",
   "short_name": "Receipts",
-  "description": "Create and manage Evergreen Filling Station receipts offline.",
+  "description": "Create and manage Evergreen and SKN receipts offline.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
@@ -16,4 +16,3 @@
     }
   ]
 }
-

@@ -2,10 +2,14 @@ import { z } from "zod";
 import type {
   AppBackup,
   BusinessProfile,
+  EvergreenReceiptDraft,
+  EvergreenReceiptSnapshot,
   LineItem,
   Receipt,
   ReceiptDraft,
   ReceiptSnapshot,
+  ReceiptTemplateId,
+  SknReceiptDraft,
 } from "../types";
 
 export const DEFAULT_PROFILE: BusinessProfile = {
@@ -28,10 +32,6 @@ export function createId(prefix = "id") {
   return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
-export function todayIso() {
-  return new Date().toLocaleDateString("en-CA");
-}
-
 export function createLineItem(particulars = "Petrol (MS)"): LineItem {
   return {
     id: createId("item"),
@@ -43,8 +43,9 @@ export function createLineItem(particulars = "Petrol (MS)"): LineItem {
   };
 }
 
-export function createEmptyDraft(): ReceiptDraft {
+export function createEmptyEvergreenDraft(): EvergreenReceiptDraft {
   return {
+    templateId: "evergreen",
     receiptNumber: "",
     date: "",
     paymentMode: "cash",
@@ -54,8 +55,29 @@ export function createEmptyDraft(): ReceiptDraft {
   };
 }
 
+export function createEmptySknDraft(): SknReceiptDraft {
+  return {
+    templateId: "skn",
+    receiptNumber: "",
+    date: "",
+    vehicleNumber: "",
+    quantity: "",
+    amount: "",
+    total: "",
+  };
+}
+
+export function createEmptyDraft(): EvergreenReceiptDraft;
+export function createEmptyDraft(templateId: "evergreen"): EvergreenReceiptDraft;
+export function createEmptyDraft(templateId: "skn"): SknReceiptDraft;
+export function createEmptyDraft(templateId?: ReceiptTemplateId): ReceiptDraft;
+export function createEmptyDraft(templateId: ReceiptTemplateId = "evergreen") {
+  return templateId === "skn" ? createEmptySknDraft() : createEmptyEvergreenDraft();
+}
+
 export function parseMoney(value: string | number) {
-  const parsed = typeof value === "number" ? value : Number.parseFloat(value);
+  const normalized = typeof value === "string" ? value.replace(/,/g, "").trim() : value;
+  const parsed = typeof normalized === "number" ? normalized : Number.parseFloat(normalized);
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
@@ -72,6 +94,11 @@ export function calculateTotal(items: LineItem[]) {
   return roundMoney(items.reduce((sum, item) => sum + calculateLineAmount(item), 0));
 }
 
+export function calculateDraftTotal(draft: ReceiptDraft) {
+  if (draft.templateId === "evergreen") return calculateTotal(draft.items);
+  return roundMoney(parseMoney(draft.total || draft.amount));
+}
+
 export function formatInr(value: number) {
   return new Intl.NumberFormat("en-IN", {
     minimumFractionDigits: 2,
@@ -83,22 +110,61 @@ export function validateDraft(draft: ReceiptDraft) {
   const errors: string[] = [];
   if (!draft.receiptNumber.trim()) errors.push("Receipt number is required.");
   if (!draft.date) errors.push("Receipt date is required.");
+
+  if (draft.templateId === "skn") {
+    if (parseMoney(draft.amount) <= 0) errors.push("Enter a positive SKN amount.");
+    if ([draft.quantity, draft.amount, draft.total].some((value) => parseMoney(value) < 0)) {
+      errors.push("Quantity, amount, and total cannot be negative.");
+    }
+    return errors;
+  }
+
   const validItems = draft.items.filter((item) => {
     if (!item.particulars.trim()) return false;
     if (item.useManualAmount) return parseMoney(item.manualAmount) > 0;
     return parseMoney(item.quantity) > 0 && parseMoney(item.rate) >= 0;
   });
   if (validItems.length === 0) errors.push("Add at least one complete line item.");
-  if (draft.items.some((item) => parseMoney(item.quantity) < 0 || parseMoney(item.rate) < 0)) {
-    errors.push("Quantity and rate cannot be negative.");
+  if (
+    draft.items.some(
+      (item) =>
+        parseMoney(item.quantity) < 0 ||
+        parseMoney(item.rate) < 0 ||
+        parseMoney(item.manualAmount) < 0,
+    )
+  ) {
+    errors.push("Quantity, rate, and amount cannot be negative.");
   }
   return errors;
 }
 
+export function draftFromReceipt(receipt: Receipt): ReceiptDraft {
+  if (receipt.templateId === "skn") {
+    return {
+      templateId: "skn",
+      receiptNumber: receipt.receiptNumber,
+      date: receipt.date,
+      vehicleNumber: receipt.vehicleNumber,
+      quantity: receipt.quantity,
+      amount: receipt.amount,
+      total: receipt.total,
+    };
+  }
+  return {
+    templateId: "evergreen",
+    receiptNumber: receipt.receiptNumber,
+    date: receipt.date,
+    paymentMode: receipt.paymentMode,
+    customerName: receipt.customerName,
+    vehicleNumber: receipt.vehicleNumber,
+    items: structuredClone(receipt.items),
+  };
+}
+
 export function receiptSnapshot(receipt: Receipt): ReceiptSnapshot {
-  const snapshot: ReceiptSnapshot & { revisions?: Receipt["revisions"] } = structuredClone(receipt);
+  const snapshot: Partial<Receipt> = structuredClone(receipt);
   delete snapshot.revisions;
-  return snapshot;
+  return snapshot as ReceiptSnapshot;
 }
 
 export function buildReceipt(
@@ -108,24 +174,31 @@ export function buildReceipt(
   revisionReason?: string,
 ): Receipt {
   const now = new Date().toISOString();
-  if (!existing) {
-    return {
-      ...structuredClone(draft),
-      id: createId("receipt"),
-      total: calculateTotal(draft.items),
-      profileSnapshot: structuredClone(profile),
-      createdAt: now,
-      updatedAt: now,
-      revisions: [],
-    };
-  }
+  const metadata = {
+    id: existing?.id ?? createId("receipt"),
+    totalValue: calculateDraftTotal(draft),
+    createdAt: existing?.createdAt ?? now,
+    updatedAt: now,
+  };
+  const snapshot: ReceiptSnapshot =
+    draft.templateId === "evergreen"
+      ? {
+          ...structuredClone(draft),
+          ...metadata,
+          profileSnapshot:
+            existing?.templateId === "evergreen"
+              ? structuredClone(existing.profileSnapshot)
+              : structuredClone(profile),
+        }
+      : { ...structuredClone(draft), ...metadata };
 
+  if (!existing) return { ...snapshot, revisions: [] } as Receipt;
+  if (existing.templateId !== draft.templateId) {
+    throw new Error("A receipt cannot change templates.");
+  }
   if (!revisionReason?.trim()) throw new Error("A revision reason is required.");
   return {
-    ...existing,
-    ...structuredClone(draft),
-    total: calculateTotal(draft.items),
-    updatedAt: now,
+    ...snapshot,
     revisions: [
       ...existing.revisions,
       {
@@ -135,6 +208,28 @@ export function buildReceipt(
         previous: receiptSnapshot(existing),
       },
     ],
+  } as Receipt;
+}
+
+export function createPreviewReceipt(
+  draft: ReceiptDraft,
+  profile: BusinessProfile,
+  existing?: Receipt,
+): Receipt {
+  const now = new Date().toISOString();
+  const metadata = {
+    id: existing?.id ?? "preview",
+    totalValue: calculateDraftTotal(draft),
+    createdAt: existing?.createdAt ?? now,
+    updatedAt: now,
+    revisions: existing?.revisions ?? [],
+  };
+  if (draft.templateId === "skn") return { ...structuredClone(draft), ...metadata };
+  return {
+    ...structuredClone(draft),
+    ...metadata,
+    profileSnapshot:
+      existing?.templateId === "evergreen" ? existing.profileSnapshot : profile,
   };
 }
 
@@ -159,7 +254,8 @@ const lineItemSchema = z.object({
   useManualAmount: z.boolean(),
 });
 
-const draftFields = {
+const evergreenFields = {
+  templateId: z.literal("evergreen"),
   receiptNumber: z.string(),
   date: z.string(),
   paymentMode: z.enum(["cash", "credit"]),
@@ -168,8 +264,62 @@ const draftFields = {
   items: z.array(lineItemSchema),
 };
 
-const snapshotSchema = z.object({
-  ...draftFields,
+const sknFields = {
+  templateId: z.literal("skn"),
+  receiptNumber: z.string(),
+  date: z.string(),
+  vehicleNumber: z.string(),
+  quantity: z.string(),
+  amount: z.string(),
+  total: z.string(),
+};
+
+const metadataFields = {
+  id: z.string(),
+  totalValue: z.number(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+};
+
+const evergreenSnapshotSchema = z.object({
+  ...evergreenFields,
+  ...metadataFields,
+  profileSnapshot: profileSchema,
+});
+
+const sknSnapshotSchema = z.object({ ...sknFields, ...metadataFields });
+const snapshotSchema = z.discriminatedUnion("templateId", [evergreenSnapshotSchema, sknSnapshotSchema]);
+
+const revisionSchema = z.object({
+  id: z.string(),
+  reason: z.string(),
+  revisedAt: z.string(),
+  previous: snapshotSchema,
+});
+
+const receiptSchema = z.discriminatedUnion("templateId", [
+  evergreenSnapshotSchema.extend({ revisions: z.array(revisionSchema) }),
+  sknSnapshotSchema.extend({ revisions: z.array(revisionSchema) }),
+]);
+
+const backupV2Schema = z.object({
+  version: z.literal(2),
+  exportedAt: z.string(),
+  profile: profileSchema,
+  receipts: z.array(receiptSchema),
+});
+
+const legacyDraftFields = {
+  receiptNumber: z.string(),
+  date: z.string(),
+  paymentMode: z.enum(["cash", "credit"]),
+  customerName: z.string(),
+  vehicleNumber: z.string(),
+  items: z.array(lineItemSchema),
+};
+
+const legacySnapshotSchema = z.object({
+  ...legacyDraftFields,
   id: z.string(),
   total: z.number(),
   profileSnapshot: profileSchema,
@@ -177,29 +327,107 @@ const snapshotSchema = z.object({
   updatedAt: z.string(),
 });
 
-const receiptSchema: z.ZodType<Receipt> = snapshotSchema.extend({
+const legacyReceiptSchema = legacySnapshotSchema.extend({
   revisions: z.array(
     z.object({
       id: z.string(),
       reason: z.string(),
       revisedAt: z.string(),
-      previous: snapshotSchema,
+      previous: legacySnapshotSchema,
     }),
   ),
 });
 
-export const backupSchema: z.ZodType<AppBackup> = z.object({
+const backupV1Schema = z.object({
   version: z.literal(1),
   exportedAt: z.string(),
   profile: profileSchema,
-  receipts: z.array(receiptSchema),
+  receipts: z.array(legacyReceiptSchema),
 });
+
+type LegacySnapshot = z.infer<typeof legacySnapshotSchema>;
+type LegacyReceipt = z.infer<typeof legacyReceiptSchema>;
+
+function migrateLegacySnapshot(snapshot: LegacySnapshot): EvergreenReceiptSnapshot {
+  const { total, ...fields } = snapshot;
+  return { ...fields, templateId: "evergreen", totalValue: total };
+}
+
+function migrateLegacyReceipt(receipt: LegacyReceipt): Receipt {
+  const migrated = migrateLegacySnapshot(receipt);
+  return {
+    ...migrated,
+    templateId: "evergreen",
+    revisions: receipt.revisions.map((revision) => ({
+      ...revision,
+      previous: migrateLegacySnapshot(revision.previous),
+    })),
+  };
+}
+
+export const backupSchema: z.ZodType<AppBackup> = z.union([backupV2Schema, backupV1Schema]).transform((backup) => {
+  if (backup.version === 2) return backup;
+  return {
+    version: 2 as const,
+    exportedAt: backup.exportedAt,
+    profile: backup.profile,
+    receipts: backup.receipts.map(migrateLegacyReceipt),
+  };
+});
+
+export function normalizeStoredDraft(input: unknown): ReceiptDraft {
+  const draft = (input ?? {}) as Record<string, unknown>;
+  if (draft.templateId === "skn") {
+    return {
+      ...createEmptySknDraft(),
+      ...(draft as Partial<SknReceiptDraft>),
+      templateId: "skn",
+    };
+  }
+  return {
+    ...createEmptyEvergreenDraft(),
+    ...(draft as Partial<EvergreenReceiptDraft>),
+    templateId: "evergreen",
+  };
+}
+
+export function normalizeStoredReceipt(input: unknown): Receipt {
+  const receipt = input as Record<string, unknown> & {
+    templateId?: ReceiptTemplateId;
+    total?: number;
+    totalValue?: number;
+    revisions?: Array<Record<string, unknown> & { previous?: unknown }>;
+  };
+  if (receipt.templateId === "skn" || receipt.templateId === "evergreen") {
+    return receipt as unknown as Receipt;
+  }
+  const revisions = (receipt.revisions ?? []).map((revision) => ({
+    ...revision,
+    previous: receiptSnapshot(
+      normalizeStoredReceipt({ ...(revision.previous as object), revisions: [] }),
+    ),
+  }));
+  const { total, ...legacy } = receipt;
+  return {
+    ...legacy,
+    templateId: "evergreen",
+    totalValue: receipt.totalValue ?? total ?? 0,
+    revisions,
+  } as unknown as Receipt;
+}
 
 export function matchesReceipt(receipt: Receipt, query: string) {
   const normalized = query.trim().toLocaleLowerCase();
   if (!normalized) return true;
-  return [receipt.receiptNumber, receipt.customerName, receipt.vehicleNumber, receipt.date]
-    .join(" ")
-    .toLocaleLowerCase()
-    .includes(normalized);
+  const values =
+    receipt.templateId === "evergreen"
+      ? [
+          "evergreen",
+          receipt.receiptNumber,
+          receipt.customerName,
+          receipt.vehicleNumber,
+          receipt.date,
+        ]
+      : ["skn", "cng", receipt.receiptNumber, receipt.vehicleNumber, receipt.date];
+  return values.join(" ").toLocaleLowerCase().includes(normalized);
 }
