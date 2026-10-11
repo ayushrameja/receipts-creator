@@ -1,10 +1,10 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
-const vercelHost = process.env.VERCEL_PROJECT_PRODUCTION_URL ?? process.env.VERCEL_URL;
+const siteUrl = "https://receipts.lowhp.studio";
 
 export const metadata: Metadata = {
-  metadataBase: new URL(vercelHost ? `https://${vercelHost}` : "http://localhost:3000"),
+  metadataBase: new URL(siteUrl),
   title: {
     default: "Receipts",
     template: "%s · Receipts",
